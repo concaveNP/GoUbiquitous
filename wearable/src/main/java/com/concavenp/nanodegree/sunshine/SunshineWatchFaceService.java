@@ -1,38 +1,21 @@
 package com.concavenp.nanodegree.sunshine;
 
-import android.Manifest;
 import android.content.BroadcastReceiver;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.PowerManager;
-import android.support.v4.app.ActivityCompat;
-import android.support.wearable.provider.WearableCalendarContract;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
-import android.text.DynamicLayout;
-import android.text.Editable;
-import android.text.Html;
-import android.text.Layout;
-import android.text.SpannableStringBuilder;
-import android.text.TextPaint;
 import android.text.format.DateFormat;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
@@ -47,6 +30,8 @@ import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -156,6 +141,11 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         Date mDate;
         SimpleDateFormat mDayOfWeekFormat;
         java.text.DateFormat mDateFormat;
+
+        int mWeatherId;
+        double mHighTemp = 92.342;
+        double mLowTemp = 63.093;
+        String mWeatherDescription;
 
         boolean mShouldDrawColons;
         float mXOffset;
@@ -518,18 +508,30 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                         mCalendar.get(Calendar.AM_PM)), x, mYOffset, mAmPmPaint);
             }
 
-            // Only render the day of week and date if there is no peek card, so they do not bleed
-            // into each other in ambient mode.
-            if (getPeekCardPosition().isEmpty()) {
-                // Day of week
-                canvas.drawText(
-                        mDayOfWeekFormat.format(mDate),
-                        mXOffset, mYOffset + mLineHeight, mDatePaint);
-                // Date
-                canvas.drawText(
-                        mDateFormat.format(mDate),
-                        mXOffset, mYOffset + mLineHeight * 2, mDatePaint);
-            }
+            // Day of week
+            String formattedDayOfWeek = mDayOfWeekFormat.format(mDate);
+            canvas.drawText(formattedDayOfWeek, mXOffset, mYOffset + mLineHeight, mDatePaint);
+
+            // Date
+            String formattedDate = mDateFormat.format(mDate);
+            canvas.drawText(formattedDate, mXOffset, mYOffset + mLineHeight * 2, mDatePaint);
+
+            float xDOW = mDatePaint.measureText(formattedDayOfWeek);
+            float xDate = mDatePaint.measureText(formattedDate);
+            float xLocation = mXOffset + mDatePaint.measureText("  ") + ((xDOW > xDate) ? xDOW : xDate);
+
+            // High Temp
+            int high = (int) Math.round(mHighTemp);
+            String formattedHighTemp = "High: " + high + "\u00b0";
+            canvas.drawText(formattedHighTemp, xLocation, mYOffset + mLineHeight, mDatePaint);
+
+            // Low Temp
+            int low = (int) Math.round(mLowTemp);
+            String formattedLowTemp = "Low: " + low + "\u00b0";
+            canvas.drawText(formattedLowTemp, xLocation, mYOffset + mLineHeight * 2, mDatePaint);
+
+            // DRAW stuff here dave
+
         }
 
         /**
@@ -554,75 +556,113 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             return isVisible() && !isInAmbientMode();
         }
 
-        private void updateConfigDataItemAndUiOnStartup() {
-            SunshineWatchFaceUtil.fetchConfigDataMap(mGoogleApiClient,
-                    new SunshineWatchFaceUtil.FetchConfigDataMapCallback() {
-                        @Override
-                        public void onConfigDataMapFetched(DataMap startupConfig) {
-                            // If the DataItem hasn't been created yet or some keys are missing,
-                            // use the default values.
-                            setDefaultValuesForMissingConfigKeys(startupConfig);
-                            SunshineWatchFaceUtil.putConfigDataItem(mGoogleApiClient, startupConfig);
+        private void updateWeatherDataItemAndUiOnStartup() {
 
-                            updateUiForConfigDataMap(startupConfig);
+            SunshineWatchFaceUtil.fetchWeatherDataMap(mGoogleApiClient, new SunshineWatchFaceUtil.FetchWeatherDataMapCallback() {
+
+                        @Override
+                        public void onWeatherDataMapFetched(DataMap weatherState) {
+
+                            // If the DataItem hasn't been created yet or some keys are missing, use the default values.
+                            setDefaultValuesForMissingConfigKeys(weatherState);
+
+                            SunshineWatchFaceUtil.putWeatherDataItem(mGoogleApiClient, weatherState);
+
+                            updateUiForWeatherDataMap(weatherState);
+
                         }
+
                     }
+
             );
+
         }
 
-        private void setDefaultValuesForMissingConfigKeys(DataMap config) {
-            addIntKeyIfMissing(config, SunshineWatchFaceUtil.KEY_BACKGROUND_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND);
-            addIntKeyIfMissing(config, SunshineWatchFaceUtil.KEY_HOURS_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_HOUR_DIGITS);
-            addIntKeyIfMissing(config, SunshineWatchFaceUtil.KEY_MINUTES_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_MINUTE_DIGITS);
-            addIntKeyIfMissing(config, SunshineWatchFaceUtil.KEY_SECONDS_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_SECOND_DIGITS);
+        private void setDefaultValuesForMissingConfigKeys(DataMap weatherState) {
+
+            addIntKeyIfMissing(weatherState, SunshineWatchFaceUtil.KEY_BACKGROUND_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND);
+            addIntKeyIfMissing(weatherState, SunshineWatchFaceUtil.KEY_HOURS_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_HOUR_DIGITS);
+            addIntKeyIfMissing(weatherState, SunshineWatchFaceUtil.KEY_MINUTES_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_MINUTE_DIGITS);
+            addIntKeyIfMissing(weatherState, SunshineWatchFaceUtil.KEY_SECONDS_COLOR, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_SECOND_DIGITS);
+
         }
 
         private void addIntKeyIfMissing(DataMap config, String key, int color) {
+
             if (!config.containsKey(key)) {
+
                 config.putInt(key, color);
+
             }
+
         }
 
         @Override // DataApi.DataListener
         public void onDataChanged(DataEventBuffer dataEvents) {
+
             for (DataEvent dataEvent : dataEvents) {
+
                 if (dataEvent.getType() != DataEvent.TYPE_CHANGED) {
+
                     continue;
+
                 }
 
                 DataItem dataItem = dataEvent.getDataItem();
-                if (!dataItem.getUri().getPath().equals(
-                        SunshineWatchFaceUtil.PATH_WITH_FEATURE)) {
+
+                if (!dataItem.getUri().getPath().equals( SunshineWatchFaceUtil.PATH_WITH_FEATURE)) {
+
                     continue;
+
                 }
 
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
                 DataMap config = dataMapItem.getDataMap();
+
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
+
                     Log.d(TAG, "Config DataItem updated:" + config);
+
                 }
-                updateUiForConfigDataMap(config);
+
+                updateUiForWeatherDataMap(config);
             }
         }
 
-        private void updateUiForConfigDataMap(final DataMap config) {
+        private void updateUiForWeatherDataMap(final DataMap weatherState) {
+
             boolean uiUpdated = false;
-            for (String configKey : config.keySet()) {
-                if (!config.containsKey(configKey)) {
+
+            for (String key : weatherState.keySet()) {
+
+                if (!weatherState.containsKey(key)) {
+
                     continue;
+
                 }
-                int color = config.getInt(configKey);
+
+                int color = weatherState.getInt(key);
+
                 if (Log.isLoggable(TAG, Log.DEBUG)) {
-                    Log.d(TAG, "Found watch face config key: " + configKey + " -> "
-                            + Integer.toHexString(color));
+
+                    Log.d(TAG, "Found watch face weatherState key: " + key + " -> " + Integer.toHexString(color));
+
                 }
-                if (updateUiForKey(configKey, color)) {
+
+                if (updateUiForKey(key, color)) {
+
                     uiUpdated = true;
+
                 }
+
             }
+
             if (uiUpdated) {
+
                 invalidate();
+
             }
+
         }
 
         /**
@@ -632,43 +672,68 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
          * @return whether UI has been updated
          */
         private boolean updateUiForKey(String configKey, int color) {
+
             if (configKey.equals(SunshineWatchFaceUtil.KEY_BACKGROUND_COLOR)) {
+
                 setInteractiveBackgroundColor(color);
+
             } else if (configKey.equals(SunshineWatchFaceUtil.KEY_HOURS_COLOR)) {
+
                 setInteractiveHourDigitsColor(color);
+
             } else if (configKey.equals(SunshineWatchFaceUtil.KEY_MINUTES_COLOR)) {
+
                 setInteractiveMinuteDigitsColor(color);
+
             } else if (configKey.equals(SunshineWatchFaceUtil.KEY_SECONDS_COLOR)) {
+
                 setInteractiveSecondDigitsColor(color);
+
             } else {
+
                 Log.w(TAG, "Ignoring unknown config key: " + configKey);
                 return false;
+
             }
+
             return true;
         }
 
         @Override  // GoogleApiClient.ConnectionCallbacks
         public void onConnected(Bundle connectionHint) {
+
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "onConnected: " + connectionHint);
             }
+
             Wearable.DataApi.addListener(mGoogleApiClient, Engine.this);
-            updateConfigDataItemAndUiOnStartup();
+
+            updateWeatherDataItemAndUiOnStartup();
+
         }
 
         @Override  // GoogleApiClient.ConnectionCallbacks
         public void onConnectionSuspended(int cause) {
+
             if (Log.isLoggable(TAG, Log.DEBUG)) {
+
                 Log.d(TAG, "onConnectionSuspended: " + cause);
+
             }
+
         }
 
         @Override  // GoogleApiClient.OnConnectionFailedListener
         public void onConnectionFailed(ConnectionResult result) {
+
             if (Log.isLoggable(TAG, Log.DEBUG)) {
+
                 Log.d(TAG, "onConnectionFailed: " + result);
+
             }
+
         }
+
     }
 
 }

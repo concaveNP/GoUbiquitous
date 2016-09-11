@@ -31,6 +31,7 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.Wearable;
 
 public final class SunshineWatchFaceUtil {
+
     private static final String TAG = "SunshineWatchFaceUtil";
 
     /**
@@ -57,52 +58,53 @@ public final class SunshineWatchFaceUtil {
      */
     public static final String KEY_SECONDS_COLOR = "SECONDS_COLOR";
 
+    public static final String KEY_WEATHER_ID = "WEATHER_ID";
+    public static final String KEY_MAX_TEMP = "MAX_TEMP";
+    public static final String KEY_MIN_TEMP = "MIN_TEMP";
+    public static final String KEY_SHORT_DESC = "SHORT_DESC";
+
     /**
-     * The path for the {@link DataItem} containing {@link SunshineWatchFaceService} configuration.
+     * The path for the {@link DataItem} containing {@link SunshineWatchFaceService} the weather data.
      */
-    public static final String PATH_WITH_FEATURE = "/watch_face_config/Digital";
+    public static final String PATH_WITH_FEATURE = "/watch_face_config/Sunshine";
 
     /**
      * Name of the default interactive mode background color and the ambient mode background color.
      */
     public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_BACKGROUND = "Black";
-    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND =
-            parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_BACKGROUND);
+    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND = parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_BACKGROUND);
 
     /**
      * Name of the default interactive mode hour digits color and the ambient mode hour digits
      * color.
      */
     public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_HOUR_DIGITS = "White";
-    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_HOUR_DIGITS =
-            parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_HOUR_DIGITS);
+    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_HOUR_DIGITS = parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_HOUR_DIGITS);
 
     /**
      * Name of the default interactive mode minute digits color and the ambient mode minute digits
      * color.
      */
     public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_MINUTE_DIGITS = "White";
-    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_MINUTE_DIGITS =
-            parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_MINUTE_DIGITS);
+    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_MINUTE_DIGITS = parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_MINUTE_DIGITS);
 
     /**
      * Name of the default interactive mode second digits color and the ambient mode second digits
      * color.
      */
     public static final String COLOR_NAME_DEFAULT_AND_AMBIENT_SECOND_DIGITS = "Gray";
-    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_SECOND_DIGITS =
-            parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_SECOND_DIGITS);
+    public static final int COLOR_VALUE_DEFAULT_AND_AMBIENT_SECOND_DIGITS = parseColor(COLOR_NAME_DEFAULT_AND_AMBIENT_SECOND_DIGITS);
 
     /**
-     * Callback interface to perform an action with the current config {@link DataMap} for
+     * Callback interface to perform an action with the current weather state {@link DataMap} for
      * {@link SunshineWatchFaceService}.
      */
-    public interface FetchConfigDataMapCallback {
+    public interface FetchWeatherDataMapCallback {
         /**
-         * Callback invoked with the current config {@link DataMap} for
+         * Callback invoked with the current weather state {@link DataMap} for
          * {@link SunshineWatchFaceService}.
          */
-        void onConfigDataMapFetched(DataMap config);
+        void onWeatherDataMapFetched(DataMap weatherState);
     }
 
     private static int parseColor(String colorName) {
@@ -110,18 +112,19 @@ public final class SunshineWatchFaceUtil {
     }
 
     /**
-     * Asynchronously fetches the current config {@link DataMap} for {@link SunshineWatchFaceService}
+     * Asynchronously fetches the current Weather State {@link DataMap} for {@link SunshineWatchFaceService}
      * and passes it to the given callback.
      * <p>
-     * If the current config {@link DataItem} doesn't exist, it isn't created and the callback
+     * If the current weather state {@link DataItem} doesn't exist, it isn't created and the callback
      * receives an empty DataMap.
      */
-    public static void fetchConfigDataMap(final GoogleApiClient client,
-            final FetchConfigDataMapCallback callback) {
-        Wearable.NodeApi.getLocalNode(client).setResultCallback(
-                new ResultCallback<NodeApi.GetLocalNodeResult>() {
+    public static void fetchWeatherDataMap(final GoogleApiClient client, final FetchWeatherDataMapCallback callback) {
+
+        Wearable.NodeApi.getLocalNode(client).setResultCallback( new ResultCallback<NodeApi.GetLocalNodeResult>() {
+
                     @Override
                     public void onResult(NodeApi.GetLocalNodeResult getLocalNodeResult) {
+
                         String localNode = getLocalNodeResult.getNode().getId();
                         Uri uri = new Uri.Builder()
                                 .scheme("wear")
@@ -130,44 +133,45 @@ public final class SunshineWatchFaceUtil {
                                 .build();
                         Wearable.DataApi.getDataItem(client, uri)
                                 .setResultCallback(new DataItemResultCallback(callback));
+
                     }
+
                 }
         );
     }
 
     /**
-     * Overwrites (or sets, if not present) the keys in the current config {@link DataItem} with
-     * the ones appearing in the given {@link DataMap}. If the config DataItem doesn't exist,
+     * Overwrites (or sets, if not present) the keys in the current weather state {@link DataItem} with
+     * the ones appearing in the given {@link DataMap}. If the weather state DataItem doesn't exist,
      * it's created.
      * <p>
-     * It is allowed that only some of the keys used in the config DataItem appear in
-     * {@code configKeysToOverwrite}. The rest of the keys remains unmodified in this case.
+     * It is allowed that only some of the keys used in the weather state DataItem appear in
+     * {@code weatherKeysToOverwrite}. The rest of the keys remains unmodified in this case.
      */
-    public static void overwriteKeysInConfigDataMap(final GoogleApiClient googleApiClient,
-            final DataMap configKeysToOverwrite) {
+    public static void overwriteKeysInWeatherDataMap(final GoogleApiClient googleApiClient, final DataMap weatherKeysToOverwrite) {
 
-        SunshineWatchFaceUtil.fetchConfigDataMap(googleApiClient,
-                new FetchConfigDataMapCallback() {
+        SunshineWatchFaceUtil.fetchWeatherDataMap(googleApiClient, new FetchWeatherDataMapCallback() {
                     @Override
-                    public void onConfigDataMapFetched(DataMap currentConfig) {
-                        DataMap overwrittenConfig = new DataMap();
-                        overwrittenConfig.putAll(currentConfig);
-                        overwrittenConfig.putAll(configKeysToOverwrite);
-                        SunshineWatchFaceUtil.putConfigDataItem(googleApiClient, overwrittenConfig);
+                    public void onWeatherDataMapFetched(DataMap weatherState) {
+                        DataMap overwrittenWeather = new DataMap();
+                        overwrittenWeather.putAll(weatherState);
+                        overwrittenWeather.putAll(weatherKeysToOverwrite);
+                        SunshineWatchFaceUtil.putWeatherDataItem(googleApiClient, overwrittenWeather);
                     }
                 }
         );
+
     }
 
     /**
-     * Overwrites the current config {@link DataItem}'s {@link DataMap} with {@code newConfig}.
-     * If the config DataItem doesn't exist, it's created.
+     * Overwrites the current weather state {@link DataItem}'s {@link DataMap} with {@code newWeather}.
+     * If the weather state DataItem doesn't exist, it's created.
      */
-    public static void putConfigDataItem(GoogleApiClient googleApiClient, DataMap newConfig) {
+    public static void putWeatherDataItem(GoogleApiClient googleApiClient, DataMap newWeather) {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create(PATH_WITH_FEATURE);
         putDataMapRequest.setUrgent();
         DataMap configToPut = putDataMapRequest.getDataMap();
-        configToPut.putAll(newConfig);
+        configToPut.putAll(newWeather);
         Wearable.DataApi.putDataItem(googleApiClient, putDataMapRequest.asPutDataRequest())
                 .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
                     @Override
@@ -181,26 +185,38 @@ public final class SunshineWatchFaceUtil {
 
     private static class DataItemResultCallback implements ResultCallback<DataApi.DataItemResult> {
 
-        private final FetchConfigDataMapCallback mCallback;
+        private final FetchWeatherDataMapCallback mCallback;
 
-        public DataItemResultCallback(FetchConfigDataMapCallback callback) {
+        public DataItemResultCallback(FetchWeatherDataMapCallback callback) {
+
             mCallback = callback;
+
         }
 
         @Override
         public void onResult(DataApi.DataItemResult dataItemResult) {
+
             if (dataItemResult.getStatus().isSuccess()) {
+
                 if (dataItemResult.getDataItem() != null) {
-                    DataItem configDataItem = dataItemResult.getDataItem();
-                    DataMapItem dataMapItem = DataMapItem.fromDataItem(configDataItem);
-                    DataMap config = dataMapItem.getDataMap();
-                    mCallback.onConfigDataMapFetched(config);
+
+                    DataItem weatherDataItem = dataItemResult.getDataItem();
+                    DataMapItem dataMapItem = DataMapItem.fromDataItem(weatherDataItem);
+                    DataMap weatherState = dataMapItem.getDataMap();
+                    mCallback.onWeatherDataMapFetched(weatherState);
+
                 } else {
-                    mCallback.onConfigDataMapFetched(new DataMap());
+
+                    mCallback.onWeatherDataMapFetched(new DataMap());
+
                 }
+
             }
+
         }
+
     }
 
     private SunshineWatchFaceUtil() { }
+
 }
