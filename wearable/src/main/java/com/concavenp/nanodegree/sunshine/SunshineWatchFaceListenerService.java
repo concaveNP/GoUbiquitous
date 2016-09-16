@@ -16,28 +16,22 @@
 
 package com.concavenp.nanodegree.sunshine;
 
-import android.net.Uri;
-import android.os.Bundle;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.data.FreezableUtils;
-import com.google.android.gms.wearable.DataEvent;
-import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.Wearable;
 import com.google.android.gms.wearable.WearableListenerService;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
  * A {@link WearableListenerService} listening for {@link SunshineWatchFaceService} Weather messages
  * in order to update the weather icon {@link com.google.android.gms.wearable.DataItem} accordingly.
  */
-public class SunshineWatchFaceListenerService extends WearableListenerService implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class SunshineWatchFaceListenerService extends WearableListenerService {
 
     private static final String TAG = "SunshineListenerService";
 
@@ -62,7 +56,7 @@ public class SunshineWatchFaceListenerService extends WearableListenerService im
 
         if (mGoogleApiClient == null) {
 
-            mGoogleApiClient = new GoogleApiClient.Builder(this).addConnectionCallbacks(this).addOnConnectionFailedListener(this).addApi(Wearable.API).build();
+            mGoogleApiClient = new GoogleApiClient.Builder(this).addApi(Wearable.API).build();
 
         }
 
@@ -80,27 +74,6 @@ public class SunshineWatchFaceListenerService extends WearableListenerService im
         }
 
         SunshineWatchFaceUtil.overwriteKeysInWeatherDataMap(mGoogleApiClient, weatherKeysToOverwrite);
-    }
-
-    @Override // GoogleApiClient.ConnectionCallbacks
-    public void onConnected(Bundle connectionHint) {
-
-        Log.d(TAG, "onConnected: " + connectionHint);
-
-    }
-
-    @Override  // GoogleApiClient.ConnectionCallbacks
-    public void onConnectionSuspended(int cause) {
-
-        Log.d(TAG, "onConnectionSuspended: " + cause);
-
-    }
-
-    @Override  // GoogleApiClient.OnConnectionFailedListener
-    public void onConnectionFailed(ConnectionResult result) {
-
-        Log.d(TAG, "onConnectionFailed: " + result);
-
     }
 
 }

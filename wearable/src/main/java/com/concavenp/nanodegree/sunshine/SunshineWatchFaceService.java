@@ -142,9 +142,10 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         java.text.DateFormat mDateFormat;
 
         int mWeatherId;
-        double mHighTemp = 92.342;
-        double mLowTemp = 63.093;
+        double mHighTemp;
+        double mLowTemp;
         String mWeatherDescription;
+
 
         boolean mShouldDrawColons;
         float mXOffset;
