@@ -1,4 +1,11 @@
 <resources>
+
     <string name="app_name">Sunshine</string>
-    <string name="my_digital_name">My Digital</string>
+
+    <string name="digital_name">Sunshine</string>
+    <string name="digital_background_color">Background color</string>
+    <string name="digital_config_name">Digital watch face configuration</string>
+    <string name="digital_am">AM</string>
+    <string name="digital_pm">PM</string>
+
 </resources>

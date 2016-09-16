@@ -15,16 +15,21 @@
  */
 package com.example.android.sunshine.app;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.util.Pair;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.support.wearable.companion.WatchFaceCompanion;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,16 +40,41 @@ import com.example.android.sunshine.app.gcm.RegistrationIntentService;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Wearable;
 
-public class MainActivity extends AppCompatActivity implements ForecastFragment.Callback {
+public class MainActivity
+        extends
+        AppCompatActivity
+        implements
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        ForecastFragment.Callback {
 
-    private final String LOG_TAG = MainActivity.class.getSimpleName();
-    private static final String DETAILFRAGMENT_TAG = "DFTAG";
+    private final String TAG = MainActivity.class.getSimpleName();
+    private static final String DETAIL_FRAGMENT_TAG = "DFTAG";
     private final static int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     public static final String SENT_TOKEN_TO_SERVER = "sentTokenToServer";
 
     private boolean mTwoPane;
     private String mLocation;
+
+    String mPeerId;
+    GoogleApiClient mGoogleApiClient;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+//        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+//            mGoogleApiClient.disconnect();
+//        }
+        super.onStop();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
                     fragment.setArguments(args);
                 }
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.weather_detail_container, fragment, DETAILFRAGMENT_TAG)
+                        .replace(R.id.weather_detail_container, fragment, DETAIL_FRAGMENT_TAG)
                         .commit();
             }
         } else {
@@ -81,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             getSupportActionBar().setElevation(0f);
         }
 
-        ForecastFragment forecastFragment =  ((ForecastFragment)getSupportFragmentManager()
+        ForecastFragment forecastFragment = ((ForecastFragment)getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_forecast));
         forecastFragment.setUseTodayLayout(!mTwoPane);
         if (contentUri != null) {
@@ -89,7 +119,14 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
                     WeatherContract.WeatherEntry.getDateFromUri(contentUri));
         }
 
-        SunshineSyncAdapter.initializeSyncAdapter(this);
+        mPeerId = getIntent().getStringExtra(WatchFaceCompanion.EXTRA_PEER_ID);
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(Wearable.API)
+                .build();
+
+        SunshineSyncAdapter.initializeSyncAdapter(this, mGoogleApiClient, mPeerId);
 
         // If Google Play Services is up to date, we'll want to register GCM. If it is not, we'll
         // skip the registration and this device will not receive any downstream messages from
@@ -142,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             if ( null != ff ) {
                 ff.onLocationChanged();
             }
-            DetailFragment df = (DetailFragment)getSupportFragmentManager().findFragmentByTag(DETAILFRAGMENT_TAG);
+            DetailFragment df = (DetailFragment)getSupportFragmentManager().findFragmentByTag(DETAIL_FRAGMENT_TAG);
             if ( null != df ) {
                 df.onLocationChanged(location);
             }
@@ -163,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             fragment.setArguments(args);
 
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.weather_detail_container, fragment, DETAILFRAGMENT_TAG)
+                    .replace(R.id.weather_detail_container, fragment, DETAIL_FRAGMENT_TAG)
                     .commit();
         } else {
             Intent intent = new Intent(this, DetailActivity.class)
@@ -189,11 +226,69 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
                 apiAvailability.getErrorDialog(this, resultCode,
                         PLAY_SERVICES_RESOLUTION_REQUEST).show();
             } else {
-                Log.i(LOG_TAG, "This device is not supported.");
+                Log.i(TAG, "This device is not supported.");
                 finish();
             }
             return false;
         }
         return true;
     }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+
+            Log.d(TAG, "onConnected: " + bundle);
+
+        }
+
+
+        if (mPeerId != null) {
+//            Uri.Builder builder = new Uri.Builder();
+//            Uri uri = builder.scheme("wear").path(SunshineSyncAdapter.PATH_WITH_FEATURE).authority(mPeerId).build();
+//            Wearable.DataApi.getDataItem(mGoogleApiClient, uri).setResultCallback(this);
+        } else {
+            displayNoConnectedDeviceDialog();
+        }
+
+        boolean test = mGoogleApiClient.isConnected();
+        Boolean.toString(test);
+    }
+
+    @Override
+    public void onConnectionSuspended(int cause) {
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+
+            Log.d(TAG, "onConnectionSuspended: " + cause);
+
+        }
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+        if (Log.isLoggable(TAG, Log.DEBUG)) {
+
+            Log.d(TAG, "onConnectionFailed: " + connectionResult);
+
+        }
+
+    }
+
+    private void displayNoConnectedDeviceDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        String messageText = getResources().getString(R.string.title_no_device_connected);
+        String okText = getResources().getString(R.string.ok_no_device_connected);
+        builder.setMessage(messageText)
+                .setCancelable(false)
+                .setPositiveButton(okText, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) { }
+                });
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
 }
+
