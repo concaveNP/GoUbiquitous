@@ -36,7 +36,14 @@ import com.example.android.sunshine.app.Utility;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import org.json.JSONArray;
@@ -60,7 +67,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
     public static final String ACTION_DATA_UPDATED = "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
 
-    public static final String PATH_WITH_FEATURE = "/watch_face_config/Sunshine";
+    public static final String PATH_WITH_FEATURE = "/weather_message";
 
     // Interval at which to sync with the weather, in seconds.
     // 60 seconds (1 minute) * 180 = 3 hours
@@ -424,7 +431,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             String lastNotificationKey = context.getString(R.string.pref_last_notification);
             long lastSync = prefs.getLong(lastNotificationKey, 0);
 
-            if (System.currentTimeMillis() - lastSync >= DAY_IN_MILLIS) {
+           // if (System.currentTimeMillis() - lastSync >= DAY_IN_MILLIS)
+            {
                 // Last sync was more than 1 day ago, let's send a notification with the weather.
                 String locationQuery = Utility.getPreferredLocation(context);
 
@@ -506,25 +514,62 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                     NotificationManager mNotificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
 
                     // WEATHER_NOTIFICATION_ID allows you to update the notification later on.
-                    mNotificationManager.notify(WEATHER_NOTIFICATION_ID, mBuilder.build());
+                    //mNotificationManager.notify(WEATHER_NOTIFICATION_ID, mBuilder.build());
 
 
 
 
 
-                    DataMap weatherUpdate = new DataMap();
-                    weatherUpdate.putInt(KEY_WEATHER_ID, weatherId);
-                    weatherUpdate.putDouble(KEY_MAX_TEMP, high);
-                    weatherUpdate.putDouble(KEY_MIN_TEMP, low);
-                    weatherUpdate.putString(KEY_SHORT_DESC, desc);
-                    byte[] rawData = weatherUpdate .toByteArray();
-                    Wearable.MessageApi.sendMessage(oGoogleApiClient, oPeerId, PATH_WITH_FEATURE, rawData);
 
-                    if (Log.isLoggable(TAG, Log.DEBUG)) {
 
-                        Log.d(TAG, "Sent watch face weather update message");
+                    if (oGoogleApiClient != null && oGoogleApiClient.isConnected()) {
+
+
+                          PendingResult<NodeApi.GetConnectedNodesResult> pendingNodeResult = Wearable.NodeApi.getConnectedNodes(oGoogleApiClient);
+
+
+                        NodeApi.GetConnectedNodesResult nodes = pendingNodeResult.await();
+
+
+//                        //PutDataMapRequest putDataMapReq = PutDataMapRequest.create(PATH_WITH_FEATURE);
+//                        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/weather_data");
+//                        putDataMapReq.getDataMap().putInt(KEY_WEATHER_ID, weatherId);
+//                        putDataMapReq.getDataMap().putDouble(KEY_MAX_TEMP, high);
+//                        putDataMapReq.getDataMap().putDouble(KEY_MIN_TEMP, low);
+//                        putDataMapReq.getDataMap().putString(KEY_SHORT_DESC, desc);
+//                        PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
+//                        putDataReq.setUrgent();
+//                        DataApi.DataItemResult dataResult = Wearable.DataApi.putDataItem(oGoogleApiClient, putDataReq).await();
+//
+//                        Log.d(TAG, "Sent watch face weather data update: " + dataResult.getStatus().toString());
+
+
+                        DataMap weatherUpdate = new DataMap();
+                        weatherUpdate.putInt(KEY_WEATHER_ID, weatherId);
+                        weatherUpdate.putDouble(KEY_MAX_TEMP, high);
+                        weatherUpdate.putDouble(KEY_MIN_TEMP, low);
+                        weatherUpdate.putString(KEY_SHORT_DESC, desc);
+                        byte[] rawData = weatherUpdate .toByteArray();
+
+
+                        for(Node node : nodes.getNodes()) {
+                            PendingResult<MessageApi.SendMessageResult> pendingMessageResult = Wearable.MessageApi.sendMessage(oGoogleApiClient, node.getId(), PATH_WITH_FEATURE, rawData);
+                            MessageApi.SendMessageResult sentMessageResult = pendingMessageResult.await();
+                            Log.d(TAG, "Sent watch face weather message update: " + sentMessageResult.getStatus().toString());
+                        }
+
 
                     }
+
+
+
+
+
+
+
+
+
+
 
 
 

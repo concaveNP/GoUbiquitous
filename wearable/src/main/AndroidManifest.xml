@@ -12,12 +12,18 @@
     <!-- Required to act as a custom watch face. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Calendar permission used by CalendarWatchFaceService -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
+    <!-- Location permission used by FitDistanceWatchFaceService -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault">
+        <!--android:supportsRtl="true"-->
 
         <meta-data
             android:name="com.google.android.gms.version"
@@ -48,15 +54,21 @@
 
         </service>
 
-        <service android:name=".SunshineWatchFaceListenerService" >
+        <service android:name=".SunshineWatchFaceListenerService">
             <intent-filter>
+                <!--<action android:name="com.google.android.gms.wearable.DATA_CHANGED"/>-->
+                <!--<data-->
+                    <!--android:scheme="wear"-->
+                    <!--android:host="*"-->
+                    <!--android:pathPrefix="/weather_data"/>-->
                 <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED"/>
                 <data
                     android:scheme="wear"
                     android:host="*"
-                    android:pathPrefix="/"/>
+                    android:pathPrefix="/weather_message"/>
             </intent-filter>
         </service>
+
 
     </application>
 

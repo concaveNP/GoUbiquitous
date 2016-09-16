@@ -66,7 +66,8 @@ public final class SunshineWatchFaceUtil {
     /**
      * The path for the {@link DataItem} containing {@link SunshineWatchFaceService} the weather data.
      */
-    public static final String PATH_WITH_FEATURE = "/watch_face_config/Sunshine";
+    //public static final String PATH_WITH_FEATURE = "/watch_face_config/Sunshine";
+    public static final String PATH_WITH_FEATURE = "/weather_message";
 
     /**
      * Name of the default interactive mode background color and the ambient mode background color.
