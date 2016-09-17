@@ -12,4 +12,5 @@
     <dimen name="digital_line_height">25dp</dimen>
     <dimen name="digital_config_color_picker_item_margin">32dp</dimen>
 
+
 </resources>
