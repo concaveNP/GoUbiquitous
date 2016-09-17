@@ -30,6 +30,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.concavenp.nanodegree.shared.SharedUtility;
 import com.example.android.sunshine.app.data.WeatherContract;
 
 /**
@@ -135,7 +136,7 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
                 useLongToday = true;
                 break;
             default:
-                defaultImage = Utility.getIconResourceForWeatherCondition(weatherId);
+                defaultImage = SharedUtility.getArtResourceForWeatherCondition(weatherId);
                 useLongToday = false;
         }
 
