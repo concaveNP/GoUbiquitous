@@ -15,7 +15,6 @@
  */
 package com.example.android.sunshine.app;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -26,10 +25,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.util.Pair;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.support.wearable.companion.WatchFaceCompanion;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -59,20 +56,18 @@ public class MainActivity
     private boolean mTwoPane;
     private String mLocation;
 
-    String mPeerId;
     GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onStart() {
         super.onStart();
+
+        // Disconnect the API client
         mGoogleApiClient.connect();
     }
 
     @Override
     protected void onStop() {
-//        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
-//            mGoogleApiClient.disconnect();
-//        }
         super.onStop();
     }
 
@@ -119,14 +114,15 @@ public class MainActivity
                     WeatherContract.WeatherEntry.getDateFromUri(contentUri));
         }
 
-        mPeerId = getIntent().getStringExtra(WatchFaceCompanion.EXTRA_PEER_ID);
+        // Create the API client for Wear use
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
                 .addApi(Wearable.API)
                 .build();
 
-        SunshineSyncAdapter.initializeSyncAdapter(this, mGoogleApiClient, mPeerId);
+        // Give the sync adapter the client in order to use it for messaging the wear device
+        SunshineSyncAdapter.initializeSyncAdapter(this, mGoogleApiClient);
 
         // If Google Play Services is up to date, we'll want to register GCM. If it is not, we'll
         // skip the registration and this device will not receive any downstream messages from
@@ -243,17 +239,8 @@ public class MainActivity
 
         }
 
-
-        if (mPeerId != null) {
-//            Uri.Builder builder = new Uri.Builder();
-//            Uri uri = builder.scheme("wear").path(SunshineSyncAdapter.PATH_WITH_FEATURE).authority(mPeerId).build();
-//            Wearable.DataApi.getDataItem(mGoogleApiClient, uri).setResultCallback(this);
-        } else {
-            displayNoConnectedDeviceDialog();
-        }
-
-        boolean test = mGoogleApiClient.isConnected();
-        Boolean.toString(test);
+        // Connect the API client for wear use
+        mGoogleApiClient.isConnected();
     }
 
     @Override
@@ -278,17 +265,5 @@ public class MainActivity
 
     }
 
-    private void displayNoConnectedDeviceDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        String messageText = getResources().getString(R.string.title_no_device_connected);
-        String okText = getResources().getString(R.string.ok_no_device_connected);
-        builder.setMessage(messageText)
-                .setCancelable(false)
-                .setPositiveButton(okText, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) { }
-                });
-        AlertDialog alert = builder.create();
-        alert.show();
-    }
 }
 

@@ -212,23 +212,6 @@ public final class SunshineWatchFaceUtil {
         return BitmapFactory.decodeResource(res, resId, options);
     }
 
-    public static Bitmap toGrayscale(Bitmap bmpOriginal)
-    {
-        int width, height;
-        height = bmpOriginal.getHeight();
-        width = bmpOriginal.getWidth();
-
-        Bitmap bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas c = new Canvas(bmpGrayscale);
-        Paint paint = new Paint();
-        ColorMatrix cm = new ColorMatrix();
-        cm.setSaturation(0);
-        ColorMatrixColorFilter f = new ColorMatrixColorFilter(cm);
-        paint.setColorFilter(f);
-        c.drawBitmap(bmpOriginal, 0, 0, paint);
-        return bmpGrayscale;
-    }
-
     /**
      * Method taken from "Loading Large Bitmaps Efficiently" for the purpose of scaling down
      * bitmaps from resources.
@@ -255,6 +238,28 @@ public final class SunshineWatchFaceUtil {
         }
 
         return inSampleSize;
+    }
+
+    /**
+     * This method was taken from StackOverflow - "Convert a Bitmap to GrayScale in Android"
+     *
+     * Ref:  http://stackoverflow.com/questions/3373860/convert-a-bitmap-to-grayscale-in-android
+     */
+    public static Bitmap toGrayscale(Bitmap bmpOriginal)
+    {
+        int width, height;
+        height = bmpOriginal.getHeight();
+        width = bmpOriginal.getWidth();
+
+        Bitmap bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bmpGrayscale);
+        Paint paint = new Paint();
+        ColorMatrix cm = new ColorMatrix();
+        cm.setSaturation(0);
+        ColorMatrixColorFilter f = new ColorMatrixColorFilter(cm);
+        paint.setColorFilter(f);
+        c.drawBitmap(bmpOriginal, 0, 0, paint);
+        return bmpGrayscale;
     }
 
     private static class DataItemResultCallback implements ResultCallback<DataApi.DataItemResult> {
