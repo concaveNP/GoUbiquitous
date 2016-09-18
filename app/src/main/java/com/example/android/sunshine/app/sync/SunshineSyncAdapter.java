@@ -38,13 +38,10 @@ import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import org.json.JSONArray;
@@ -106,7 +103,6 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
     public static final int LOCATION_STATUS_INVALID = 4;
 
     private static GoogleApiClient oGoogleApiClient;
-    private static String oPeerId;
 
     public SunshineSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
@@ -531,6 +527,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                         weatherUpdate.putString(KEY_SHORT_DESC, desc);
                         byte[] rawData = weatherUpdate .toByteArray();
 
+                        // Send the message to all of the wear devices our mobile is connected to
                         for(Node node : nodes.getNodes()) {
                             PendingResult<MessageApi.SendMessageResult> pendingMessageResult =
                                     Wearable.MessageApi.sendMessage(oGoogleApiClient, node.getId(), PATH_WITH_FEATURE, rawData);
@@ -692,12 +689,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
     }
 
-    public static void initializeSyncAdapter(Context context, GoogleApiClient googleApiClient, String peerId) {
+    public static void initializeSyncAdapter(Context context, GoogleApiClient googleApiClient) {
 
         getSyncAccount(context);
 
         oGoogleApiClient = googleApiClient;
-        oPeerId = peerId;
 
     }
 

@@ -149,7 +149,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         String mLowTemp;
         String mWeatherDescription;
 
-
         boolean mShouldDrawColons;
         float mXOffset;
         float mYOffset;
@@ -170,9 +169,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onCreate(SurfaceHolder holder) {
 
-
-                Log.d(TAG, "onCreate");
-
+            Log.d(TAG, "onCreate");
 
             super.onCreate(holder);
 
@@ -231,9 +228,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onVisibilityChanged(boolean visible) {
 
-
-                Log.d(TAG, "onVisibilityChanged: " + visible);
-
+            Log.d(TAG, "onVisibilityChanged: " + visible);
 
             super.onVisibilityChanged(visible);
 
@@ -254,7 +249,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                 if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
 
                     Wearable.DataApi.removeListener(mGoogleApiClient, this);
-//                    Wearable.MessageApi.removeListener(mGoogleApiClient, this);
                     mGoogleApiClient.disconnect();
 
                 }
@@ -328,16 +322,14 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
 
-
-                Log.d(TAG, "onPropertiesChanged: burn-in protection = " + burnInProtection + ", low-bit ambient = " + mLowBitAmbient);
-
+            Log.d(TAG, "onPropertiesChanged: burn-in protection = " + burnInProtection + ", low-bit ambient = " + mLowBitAmbient);
 
         }
 
         @Override
         public void onTimeTick() {
             super.onTimeTick();
-                Log.d(TAG, "onTimeTick: ambient = " + isInAmbientMode());
+            Log.d(TAG, "onTimeTick: ambient = " + isInAmbientMode());
             invalidate();
         }
 
@@ -346,9 +338,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
             super.onAmbientModeChanged(inAmbientMode);
 
-
-                Log.d(TAG, "onAmbientModeChanged: " + inAmbientMode);
-
+            Log.d(TAG, "onAmbientModeChanged: " + inAmbientMode);
 
             adjustPaintColorToCurrentMode(mBackgroundPaint, mInteractiveBackgroundColor, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND);
             adjustPaintColorToCurrentMode(mHourPaint, mInteractiveHourDigitsColor, SunshineWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_HOUR_DIGITS);
@@ -374,8 +364,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             updateTimer();
         }
 
-        private void adjustPaintColorToCurrentMode(Paint paint, int interactiveColor,
-                                                   int ambientColor) {
+        private void adjustPaintColorToCurrentMode(Paint paint, int interactiveColor, int ambientColor) {
             paint.setColor(isInAmbientMode() ? ambientColor : interactiveColor);
         }
 
@@ -537,8 +526,8 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                 Bitmap weatherBitmap = SunshineWatchFaceUtil.decodeSampledBitmapFromResource(
                         getResources(),
                         SharedUtility.getArtResourceForWeatherCondition(mWeatherId),
-                        50,
-                        50);
+                        getResources().getInteger(R.integer.scaled_square_size),
+                        getResources().getInteger(R.integer.scaled_square_size));
 
                 if (isInAmbientMode())  {
                     weatherBitmap = SunshineWatchFaceUtil.toGrayscale(weatherBitmap);
@@ -658,9 +647,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                 DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItem);
                 DataMap weatherState = dataMapItem.getDataMap();
 
-
-                    Log.d(TAG, "Weather DataItem updated:" + weatherState);
-
+                Log.d(TAG, "Weather DataItem updated:" + weatherState);
 
                 updateUiForWeatherDataMap(weatherState);
 
@@ -745,7 +732,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override  // GoogleApiClient.ConnectionCallbacks
         public void onConnected(Bundle connectionHint) {
 
-                Log.d(TAG, "onConnected: " + connectionHint);
+            Log.d(TAG, "onConnected: " + connectionHint);
 
             Wearable.DataApi.addListener(mGoogleApiClient, Engine.this);
 
@@ -756,18 +743,14 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override  // GoogleApiClient.ConnectionCallbacks
         public void onConnectionSuspended(int cause) {
 
-
-                Log.d(TAG, "onConnectionSuspended: " + cause);
-
+            Log.d(TAG, "onConnectionSuspended: " + cause);
 
         }
 
         @Override  // GoogleApiClient.OnConnectionFailedListener
         public void onConnectionFailed(ConnectionResult result) {
 
-
-                Log.d(TAG, "onConnectionFailed: " + result);
-
+            Log.d(TAG, "onConnectionFailed: " + result);
 
         }
 
